@@ -43,14 +43,14 @@
 	<div class="panel-body">
 	<?php echo form_open_multipart('main/new_request',array('class'=>'form-horizontal', 'role'=>'form'));?>
 	<div class="form-group">
-		<?php echo form_label('RO Description','roDesc',array('class'=>'col-sm-2 control-label'));?>
+		<?php echo form_label('RO Description*','roDesc',array('class'=>'col-sm-2 control-label'));?>
 		<div class="col-sm-10">
 			<?php echo form_input($roDesc);?>
 			<?php echo form_error('roDesc', '<span class="label label-danger">', '</span>'); ?>
 		</div>
 	</div>
 	<div class="form-group">
-		<?php echo form_label('RO Justification','roJustification',array('class'=>'col-sm-2 control-label'));?>
+		<?php echo form_label('RO Justification*','roJustification',array('class'=>'col-sm-2 control-label'));?>
 		<div class="col-sm-10">
 			<?php echo form_input($roJustification);?>
 			<?php echo form_error('roJustification', '<span class="label label-danger">', '</span>'); ?>
@@ -69,7 +69,7 @@
 		</div>
 	</div>
 	<div class="form-group">
-		<?php echo form_label("Attach file" ,"userFile",array('class'=>'col-sm-2 control-label')); ?>
+		<?php echo form_label("Attach file<br />pdf/word only" ,"userFile",array('class'=>'col-sm-2 control-label')); ?>
 		<div class="col-sm-10">
 			<a class='btn btn-primary' href='javascript:;'>Choose File...
 			<?php 

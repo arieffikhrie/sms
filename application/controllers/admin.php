@@ -15,12 +15,14 @@ class Admin extends CI_Controller {
 		$this->load->model('Department_model');
 		$this->load->model('Items_model');
 		$this->load->model('vendors_model');
+		$this->load->model('ro_model');
 
 		$this->form_validation->set_error_delimiters($this->config->item('error_start_delimiter', 'ion_auth'), $this->config->item('error_end_delimiter', 'ion_auth'));
 		$this->data['message'] = $this->session->flashdata('message');
 		$this->data['error'] = $this->session->flashdata('error');
 		$this->data['title'] = "";
 		$this->data['admin'] = $this->ion_auth->is_admin();
+		$this->data['status'] = Array('Rejected','Requested','Released','Submitted','Approved','Collected');
 		
 		if (!$this->ion_auth->is_admin()){
 			$this->session->set_flashdata('message','You are not an admin.');
@@ -802,5 +804,87 @@ class Admin extends CI_Controller {
 		} else {
 			redirect('admin/departments', 'refresh');
 		}
+	}
+	
+	function collection(){
+		$this->data['title'] = 'Collection';
+		$this->form_validation->set_rules('collected', 'collected', '');
+		if ($this->form_validation->run() === TRUE)
+		{
+			$collected = $this->input->post('collected');
+			if( !empty($collected) ){
+				foreach ( $collected as $roID ){
+					$data = array(
+						'status' => 5
+					);
+					$this->ro_model->ro_update_status($roID,$data);
+					$log = Array(
+						'roID' => $roID,
+						'user_id' => $this->ion_auth->get_user_id(),
+						'status' => $data['status'],
+						'remark' => 'RO items have been collected'
+					);
+					$this->ro_model->ro_log_insert($log);
+				}
+				$this->session->set_flashdata('message', "Collection Updated");
+			} else {
+				$this->session->set_flashdata('message', "None collected");
+			}
+			redirect("admin/collection", 'refresh');
+		}
+		$ro = $this->ro_model->ro_getHOD(array('status'=>'4'));
+		$tmpl = array ( 'table_open'  => '<table class="table table-hover datatable">' );
+		$this->table->set_template($tmpl);
+		$this->table->set_heading(array('data'=>'RO ID','class'=>'col-md-1'),array('data'=>'Department','class'=>'col-md-3'), array('data'=>'Request Description','class'=>'col-md-4'), array('data'=>'Date Request','class'=>'col-md-2'), array('data'=>'Collect','class'=>'col-md-2'));
+		if ( count($ro) > 0 ){
+			$i = 1;
+			foreach ( $ro as $row ){
+				$department = $this->Department_model->department_get($row->departmentID);
+				$this->table->add_row($row->roID,$department->department_name,anchor('main/view_request/'.$row->roID,$row->roDesc,''),date('d/m/Y', strtotime($row->roDate)),form_checkbox('collected[]',$row->roID));
+				$i++;
+			}
+		}
+		$this->data['table'] = $this->table->generate();
+		$this->table->clear();
+		
+		$this->load->view("header",$this->data);
+		$this->load->view("collection",$this->data);
+		$this->load->view("footer",$this->data);
+	}
+	
+	function report(){
+		$this->data['title'] = 'Report';
+		$this->load->view("header",$this->data);
+		$this->load->view("report",$this->data);
+		$this->load->view("footer",$this->data);
+	}
+	
+	function report_excel(){
+		$ro = $this->ro_model->ro_getHOD();
+		$this->table->set_heading('RO ID','RO Description', 'RO Justification', 'Date', 'User', 'Department', 'Status');
+		if ( count($ro) > 0 ){
+			$i = 1;
+			foreach ( $ro as $row ){
+				$department = $this->Department_model->department_get($row->departmentID);
+				$user = $this->ion_auth->user($row->userID)->result()[0];
+				$this->table->add_row($row->roID,$row->roDesc,$row->roJustification,date('d/m/Y', strtotime($row->roDate)),$user->name,$department->department_name,$this->data['status'][$row->status]);
+				$i++;
+			}
+		}
+		$this->data['table_ro'] = $this->table->generate();
+		$this->table->clear();
+		$roItem = $this->ro_model->ro_item_get(array());
+		$this->table->set_heading('RO ID','Item', 'Qty');
+		if ( count($roItem) > 0 ){
+			$i = 1;
+			foreach ( $roItem as $row ){
+				$item = $this->Items_model->item_get($row->itemID);
+				$this->table->add_row($row->roID,$item->item_name,$row->qty);
+				$i++;
+			}
+		}
+		$this->data['table_roItem'] = $this->table->generate();
+		$this->table->clear();
+		$this->load->view("excel",$this->data);
 	}
 }

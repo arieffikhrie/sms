@@ -46,6 +46,8 @@
                   <li class="<?php echo ( $this->uri->uri_string() == 'admin/items' )?'active':'' ?>"><a href="<?php echo base_url(); ?>admin/items">Items</a></li>
                   <li class="<?php echo ( $this->uri->uri_string() == 'admin/vendors' )?'active':'' ?>"><a href="<?php echo base_url(); ?>admin/vendors">Vendors</a></li>
 				  <li class="<?php echo ( $this->uri->uri_string() == 'admin/departments' )?'active':'' ?>"><a href="<?php echo base_url(); ?>admin/departments">Departments</a></li>
+				  <li class="<?php echo ( $this->uri->uri_string() == 'admin/collection' )?'active':'' ?>"><a href="<?php echo base_url(); ?>admin/collection">Collection</a></li>
+				  <li class="<?php echo ( $this->uri->uri_string() == 'admin/report' )?'active':'' ?>"><a href="<?php echo base_url(); ?>admin/report">Report</a></li>
                 </ul>
               </li>
 <?php } ?>

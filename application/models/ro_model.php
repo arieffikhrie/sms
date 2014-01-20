@@ -51,6 +51,11 @@ class ro_model extends CI_Model
 		}
 	}
 	
+	function ro_item_delete($id){
+		$this->db->where('roID',$id);
+		$this->db->delete('roItems');
+	}
+	
 	function ro_item_get($roID){
 		$query = $this->db->get_where('roitems',$roID);
 		return $query->result();

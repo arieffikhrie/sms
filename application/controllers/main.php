@@ -21,7 +21,7 @@ class Main extends CI_Controller {
 		$this->data['message'] = $this->session->flashdata('message');
 		$this->data['error'] = $this->session->flashdata('error');
 		$this->data['title'] = "";
-		$this->data['status'] = Array('Rejected','Requested','Released','Submitted','Approved');
+		$this->data['status'] = Array('Rejected','Requested','Released','Submitted','Approved','Collected');
 		$this->data['admin'] = $this->ion_auth->is_admin();
 	}
 
@@ -47,11 +47,12 @@ class Main extends CI_Controller {
 		if ($this->ion_auth->in_group('approver')){
 			$this->data['hrm'] = TRUE;
 			$ro = $this->ro_model->ro_getHOD();
-			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-5'), array('data'=>'Date Request','class'=>'col-md-3'), array('data'=>'Status','class'=>'col-md-3'));
+			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'),array('data'=>'Department','class'=>'col-md-3'), array('data'=>'Request Description','class'=>'col-md-4'), array('data'=>'Date Request','class'=>'col-md-2'), array('data'=>'Status','class'=>'col-md-2'));
 			if ( count($ro) > 0 ){
 				$i = 1;
 				foreach ( $ro as $row ){
-					$this->table->add_row($i,anchor('main/view_request/'.$row->roID,$row->roDesc,''),date('d/m/Y', strtotime($row->roDate)),$status[$row->status]);
+					$department = $this->Department_model->department_get($row->departmentID);
+					$this->table->add_row($i,$department->department_name,anchor('main/view_request/'.$row->roID,$row->roDesc,''),date('d/m/Y', strtotime($row->roDate)),$status[$row->status]);
 					$i++;
 				}
 			} else {
@@ -63,11 +64,12 @@ class Main extends CI_Controller {
 		if ($this->ion_auth->is_admin()){
 			$this->data['admin'] = TRUE;
 			$ro = $this->ro_model->ro_getHOD();
-			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-5'), array('data'=>'Date Request','class'=>'col-md-3'), array('data'=>'Status','class'=>'col-md-3'));
+			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'),array('data'=>'Department','class'=>'col-md-3'), array('data'=>'Request Description','class'=>'col-md-4'), array('data'=>'Date Request','class'=>'col-md-2'), array('data'=>'Status','class'=>'col-md-2'));
 			if ( count($ro) > 0 ){
 				$i = 1;
 				foreach ( $ro as $row ){
-					$this->table->add_row($i,anchor('main/view_request/'.$row->roID,$row->roDesc,''),date('d/m/Y', strtotime($row->roDate)),$status[$row->status]);
+					$department = $this->Department_model->department_get($row->departmentID);
+					$this->table->add_row($i,$department->department_name,anchor('main/view_request/'.$row->roID,$row->roDesc,''),date('d/m/Y', strtotime($row->roDate)),$status[$row->status]);
 					$i++;
 				}
 			} else {
@@ -80,7 +82,7 @@ class Main extends CI_Controller {
 			$this->data['hod'] = TRUE;
 			$hodArr = Array('departmentID' => $user->department_id);
 			$ro = $this->ro_model->ro_getHOD($hodArr);
-			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-5'), array('data'=>'Date Request','class'=>'col-md-3'), array('data'=>'Status','class'=>'col-md-3'));
+			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-7'), array('data'=>'Date Request','class'=>'col-md-2'), array('data'=>'Status','class'=>'col-md-2'));
 			if ( count($ro) > 0 ){
 				$i = 1;
 				foreach ( $ro as $row ){
@@ -96,7 +98,7 @@ class Main extends CI_Controller {
 		if($this->ion_auth->in_group('requestor')){
 			$this->data['members'] = TRUE;
 			$ro = $this->ro_model->ro_getByUser($this->ion_auth->get_user_id());
-			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-5'), array('data'=>'Date Request','class'=>'col-md-3'), array('data'=>'Status','class'=>'col-md-3'));
+			$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'), array('data'=>'Request Description','class'=>'col-md-7'), array('data'=>'Date Request','class'=>'col-md-2'), array('data'=>'Status','class'=>'col-md-2'));
 			if ( count($ro) > 0 ){
 				$i = 1;
 				foreach ( $ro as $row ){
@@ -121,6 +123,7 @@ class Main extends CI_Controller {
 			$this->session->set_flashdata('error', 'You are not a requestor');
 			redirect('main', 'refresh');
 		} else {
+			$this->data['title'] = 'New RO';
 			$this->load->library(array('form_validation','upload'));
 			$this->form_validation->set_rules('roDesc', 'RO Description', 'required');
 			$this->form_validation->set_rules('roJustification', 'RO Justification', 'required');
@@ -133,7 +136,7 @@ class Main extends CI_Controller {
 				if ($_FILES && $_FILES['userFile']['name'] !== "") {
 					$config =  array(
 					  'upload_path'     => "./files/",
-					  'allowed_types'   => "gif|jpg|png|jpeg|pdf|doc|xml",
+					  'allowed_types'   => "pdf|doc|docx",
 					  'overwrite'       => TRUE,
 					  'max_size'        => "1024*15",
 					  'max_height'      => "",
@@ -259,6 +262,7 @@ class Main extends CI_Controller {
 		if (!$this->ion_auth->logged_in()){
 			redirect('main/login', 'refresh');
 		} else{
+			$this->data['title'] = "RO";
 			$status = $this->data['status'];
 			$this->load->view('header',$this->data);
 			if($roID != NULL){
@@ -267,11 +271,42 @@ class Main extends CI_Controller {
 				$items= $this->ro_model->ro_item_get($roArr);
 				$tmpl = array ( 'table_open'  => '<table class="table table-hover datatable">' );
 				$this->table->set_template($tmpl);
-				$this->table->set_heading('No', 'Item Name', 'Quantity');
+				$chkbox_all = array(
+					'name' => 'select_all',
+					'id' => 'select_all',
+					'value' => 'true',
+					'checked' => TRUE
+				);
+				$this->table->set_heading(array('data'=>'No','class'=>'col-md-1'),'Item Name', array('data'=>'Quantity','class'=>'col-md-1'),array('data'=>form_checkbox($chkbox_all),'class'=>'col-md-1'));
 				if ( count($items) > 0 ){
 					$i = 1;
 					foreach ( $items as $item ){
-						$this->table->add_row($i,$this->ro_model->item_name($item->itemID),$item->qty);
+						$itemID = array(
+							'name' => 'itemID[]',
+							'type' => 'hidden',
+							'value' => $item->itemID,
+							'class' => 'form-control'
+						);
+						$itemQty = array(
+							'name' => 'itemQty[]',
+							'id' => 'itemQty',
+							'type' => 'text',
+							'value' => $item->qty,
+							'class' => 'form-control'
+						);
+						$item_selected = array(
+							'name' => 'item_selected[]',
+							'class' => 'item_selected',
+							'value' => '1',
+							'checked' => TRUE
+						);
+						$hidden_item_selected = array(
+							'name' => 'item_selected[]',
+							'class' => 'item_selected',
+							'value' => '0',
+							'type' => 'hidden'
+						);
+						$this->table->add_row($i.form_input($itemID),$this->ro_model->item_name($item->itemID),form_input($itemQty),form_checkbox($item_selected).form_input($hidden_item_selected));
 						$i++;
 					}
 					$this->data['table'] = $this->table->generate();
@@ -286,8 +321,9 @@ class Main extends CI_Controller {
 						$this->table->add_row($status[$row->status],$this->ion_auth->user($row->user_id)->row()->username,date('d/m/Y', strtotime($row->date)),$row->remark);
 					}
 				}
+				$this->data['form_open'] = form_open("main/request_update");
+				$this->data['form_close'] = form_close();
 				$this->data['log_table'] = $this->table->generate();
-				$this->load->view('view_request',$this->data);
 				$this->data['remark'] = array(
 					'name' => 'remark',
 					'id' => 'vendorAddress',
@@ -303,6 +339,7 @@ class Main extends CI_Controller {
 					'content' => 'Reject',
 					'class' => 'btn btn-default'
 				);
+				$this->load->view('view_request',$this->data);
 				if ( $this->ion_auth->in_group('hod') && $this->data['ro']->status == 1){
 					$this->data['updateBtn'] = array(
 						'name' => 'submitForm',
@@ -322,6 +359,14 @@ class Main extends CI_Controller {
 						'type' => 'submit',
 						'content' => 'Submit',
 						'class' => 'btn btn-default'
+					);
+					$this->data['rejectBtn'] = array(
+						'name' => 'submitForm',
+						'id' => 'submitForm',
+						'value' => 'reject',
+						'type' => 'submit',
+						'content' => 'Not Approve',
+						'class' => 'cell-hide'
 					);
 					$this->load->view('request_update',$this->data);
 				}
@@ -356,7 +401,31 @@ class Main extends CI_Controller {
 		$this->form_validation->set_rules('roID', 'RO ID', 'required');
 		if ($this->form_validation->run() == true)
 		{
+			$itemSelected = $this->input->post('item_selected');
+			$removeArr = array();
+			for ( $i = 0 ; $i < count($itemSelected); $i++ ){
+				if ( $itemSelected[$i] == 1 ){
+					$removeArr[] = $i+1;
+				}
+			}
+			foreach ( $removeArr as $i ){
+				unset($itemSelected[$i]);
+			}
+			$itemSelected = array_values($itemSelected);
 			$roID = $this->input->post('roID');
+			$items = $this->input->post('itemID');
+			$qty = $this->input->post('itemQty');
+			$this->ro_model->ro_item_delete($roID);
+			for ( $i = 0; $i< count($items); $i++ ){
+				$item = Array(
+					'roID' => $roID,
+					'itemID' => $items[$i],
+					'qty' => $qty[$i]
+				);
+				if ( $itemSelected[$i] == 1 ){
+					$this->ro_model->ro_item_insert($item);
+				}
+			}
 			$ro = $this->ro_model->ro_get(array('roID' => $roID));
 			$formSubmit = $this->input->post('submitForm');
 			$remark = $this->input->post('remark');

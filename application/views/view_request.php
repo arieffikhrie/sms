@@ -1,5 +1,5 @@
 <p><?php echo anchor('main','Back');?></p>
-
+<?php echo $form_open;?>
 <div class="panel panel-default">
 	<div class="panel-heading"><?php echo $title; ?></div>
 	<div class="panel-body">
